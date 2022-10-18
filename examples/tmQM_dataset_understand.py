@@ -8,5 +8,5 @@ from jax.example_libraries import optimizers
 import sklearn.manifold, sklearn.cluster
 import rdkit, rdkit.Chem, rdkit.Chem.Draw
 
-soldata = pd.read_csv('/home/saishubodh/2022/pytorch_geometric/data/tmQM/tmQM_y.csv.gz')
+soldata = pd.read_csv('/home/saishubodh/2022/learn_mol/data/tmQM/tmQM_y.csv.gz')
 print(soldata.head())
