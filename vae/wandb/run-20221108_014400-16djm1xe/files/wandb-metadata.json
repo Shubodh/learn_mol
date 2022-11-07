@@ -1,0 +1,24 @@
+{
+    "os": "Linux-4.15.0-189-generic-x86_64-with-glibc2.17",
+    "python": "3.8.13",
+    "heartbeatAt": "2022-11-07T20:14:03.242788",
+    "startedAt": "2022-11-07T20:14:00.030381",
+    "docker": null,
+    "gpu": "NVIDIA GeForce GTX 1080 Ti",
+    "gpu_count": 2,
+    "cpu_count": 40,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "main_vgae.py",
+    "codePath": "vae/main_vgae.py",
+    "git": {
+        "remote": "git@github.com:Shubodh/learn_mol.git",
+        "commit": "8a71a4061e3882206658a2d32e0f4c37be082276"
+    },
+    "email": "shivansh.seth@research.iiit.ac.in",
+    "root": "/home/shivansh.seth/learn_mol",
+    "host": "gnode028",
+    "username": "shivansh.seth",
+    "executable": "/home/shivansh.seth/miniconda3/envs/brain/bin/python"
+}

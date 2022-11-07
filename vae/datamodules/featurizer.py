@@ -1,6 +1,7 @@
 import networkx as nx
-from vae.datamodules.molgraph import MolGraph
+from datamodules.molgraph import MolGraph
 from rdkit import Chem
+import torch
 from torch_geometric.utils.convert import from_networkx
 from torch_geometric.utils import negative_sampling
 from torch_geometric.data import Dataset, Data
@@ -45,11 +46,12 @@ def to_networkx_graph(graph: MolGraph) -> nx.Graph:
     return G
 
 def featurize(data_file, charges_file=None, bo_file=None):
+    csd_codes = []
     if bo_file is not None:
-        bond_orders, csd_code = get_bond_orders(bo_file)
-    data = open('/content/drive/MyDrive/generating_chelating_agents/data/tmQM_X.xyz',"r").read().splitlines()
+        bond_orders, csd_codes = get_bond_orders(bo_file)
+    data = open(data_file).read().splitlines()
     if charges_file is not None:
-        charges = open('/content/drive/MyDrive/generating_chelating_agents/data/tmQM_X.q',"r").read().splitlines()
+        charges = open(charges_file).read().splitlines()
     graphs = []
     nodes = []
     data_list = []
