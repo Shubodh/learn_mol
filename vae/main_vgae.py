@@ -64,10 +64,10 @@ metrics = [
             "auc/val",
             "ap/val",
             ]
-#for i in metrics:
-#    wandb.define_metric(name=i, step_metric='epoch')
+for i in metrics:
+   wandb.define_metric(name=i, step_metric='epoch')
 
 
 for epoch in range(1, epochs + 1):
-    loss = train_vgae(epoch, model, train_loader, optimizer, beta)
-    test_loss = test_vgae(epoch, model, test_loader)
+    loss = train_vgae(epoch, train_loader, beta)
+    test_loss = test_vgae(epoch, test_loader)

@@ -4,20 +4,20 @@ from torch.nn import Linear
 from torch_geometric.nn.conv import TransformerConv
 from torch_geometric.nn import Set2Set
 from torch_geometric.nn import BatchNorm
-from config import SUPPORTED_ATOMS, SUPPORTED_EDGES, MAX_MOLECULE_SIZE, ATOMIC_NUMBERS
-from utils import graph_representation_to_molecule, to_one_hot
+from config.gvae import SUPPORTED_ATOMS, SUPPORTED_EDGES, MAX_MOLECULE_SIZE, ATOMIC_NUMBERS, DEVICE as device
+from utils.gvae_utils import graph_representation_to_molecule, to_one_hot
 from tqdm import tqdm
 
 class GVAE(nn.Module):
-    def __init__(self, feature_size):
+    def __init__(self, feature_size, encoder_embedding_size=64, edge_dim=11, latent_embedding_size=128, decoder_hidden_neurons=512):
         super(GVAE, self).__init__()
-        self.encoder_embedding_size = 64
-        self.edge_dim = 11
-        self.latent_embedding_size = 128
+        self.encoder_embedding_size = encoder_embedding_size
+        self.edge_dim = edge_dim
+        self.latent_embedding_size = latent_embedding_size
         self.num_edge_types = len(SUPPORTED_EDGES) 
         self.num_atom_types = len(SUPPORTED_ATOMS)
         self.max_num_atoms = MAX_MOLECULE_SIZE 
-        self.decoder_hidden_neurons = 512
+        self.decoder_hidden_neurons = decoder_hidden_neurons 
 
         # Encoder layers
         self.conv1 = TransformerConv(feature_size, 
@@ -66,10 +66,14 @@ class GVAE(nn.Module):
         atom_output_dim = self.max_num_atoms*(self.num_atom_types + 1)
         self.atom_decode = Linear(self.decoder_hidden_neurons, atom_output_dim)
 
+        # --- Edge decoding for discrete variables
         # --- Edge decoding (outputs a triu tensor: (max_num_atoms*(max_num_atoms-1)/2*(#edge_types + 1) ))
         edge_output_dim = int(((self.max_num_atoms * (self.max_num_atoms - 1)) / 2) * (self.num_edge_types + 1))
         self.edge_decode = Linear(self.decoder_hidden_neurons, edge_output_dim)
-        
+
+        # edge_output_dim = int(((self.max_num_atoms * (self.max_num_atoms - 1)) / 2) * (self.num_edge_types + 1))
+        # self.edge_decode_mu = Linear(self.decoder_hidden_neurons, edge_output_dim)
+        # self.edge_decode_logvar = Linear(self.decoder_hidden_neurons, edge_output_dim)
 
     def encode(self, x, edge_attr, edge_index, batch_index):
         # GNN layers
@@ -101,7 +105,8 @@ class GVAE(nn.Module):
         atom_logits = self.atom_decode(z)
         # Decode edge types
         edge_logits = self.edge_decode(z)
-
+        # edge_logits = self.reparameterize(self.edge_decode_mu(z), self.edge_decode_logvar(z))
+        # edge_mu, edge_logvar = self.edge_decode_mu(z), self.edge_decode_logvar(z)
         return atom_logits, edge_logits
 
 
@@ -144,7 +149,6 @@ class GVAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         # Decode latent vector into original molecule
         triu_logits, node_logits = self.decode(z, batch_index)
-
         return triu_logits, node_logits, mu, logvar
 
     
@@ -156,9 +160,12 @@ class GVAE(nn.Module):
         for _ in tqdm(range(num)):
             # Sample latent space
             z = torch.randn(1, self.latent_embedding_size)
+            z = z.to('cuda')
+            # print(z.shape, z.device)
 
             # Get model output (this could also be batched)
             dummy_batch_index = torch.Tensor([0]).int()
+            dummy_batch_index = dummy_batch_index.to(device)
             triu_logits, node_logits = self.decode(z, dummy_batch_index)
 
             # Reshape triu predictions 
@@ -173,7 +180,7 @@ class GVAE(nn.Module):
             
             # Get atomic numbers 
             node_preds_one_hot = to_one_hot(node_preds, options=ATOMIC_NUMBERS)
-            atom_numbers_dummy = torch.Tensor(ATOMIC_NUMBERS).repeat(node_preds_one_hot.shape[0], 1)
+            atom_numbers_dummy = torch.Tensor(ATOMIC_NUMBERS).repeat(node_preds_one_hot.shape[0], 1).to('cuda')
             atom_types = torch.masked_select(atom_numbers_dummy, node_preds_one_hot.bool())
 
             # Attempt to create valid molecule

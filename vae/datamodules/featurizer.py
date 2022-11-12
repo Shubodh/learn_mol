@@ -7,7 +7,9 @@ from torch_geometric.utils import negative_sampling
 from torch_geometric.data import Dataset, Data
 from torch_geometric.loader import DataLoader
 from torch import Tensor
-
+from config.gvae import MAX_MOLECULE_SIZE, ATOMIC_NUMBERS, SUPPORTED_ATOMS, SUPPORTED_EDGES
+from sklearn.preprocessing import OneHotEncoder
+import numpy as np
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def get_bond_orders(bo_file):
@@ -45,6 +47,35 @@ def to_networkx_graph(graph: MolGraph) -> nx.Graph:
     nx.set_edge_attributes(G, edge_attrs)
     return G
 
+def to_networkx_graph_et(graph: MolGraph) -> nx.Graph:
+    bondTypeDict = {
+        1: "SINGLE",
+        2: "DOUBLE",
+        3: "TRIPLE"
+    }
+    G = nx.Graph(graph.adj_list)
+    node_attrs = {}
+    for num, (element, xyz) in enumerate(graph):
+       anum = PT.GetAtomicNumber(element)
+       enc = OneHotEncoder(categories=[ATOMIC_NUMBERS])
+       anum_one_hot = enc.fit_transform([[anum]]).toarray()[0]
+       x = list(anum_one_hot)
+       xyz = list(xyz)
+       x.extend(xyz)
+       node_attrs[num] = {}
+       node_attrs[num]['x'] = x
+    nx.set_node_attributes(G, node_attrs)
+    edge_attrs = {}
+    for edge, length in graph.bond_lengths.items():
+        bo = int(round(graph.bond_orders[edge]))
+        bt = bondTypeDict.get(bo, "SINGLE")
+        enc = OneHotEncoder(categories=[SUPPORTED_EDGES])
+        bt_one_hot = enc.fit_transform([[bt]]).toarray()[0]
+        edge_attrs[edge] = {}
+        edge_attrs[edge]['x'] = list(bt_one_hot)
+    nx.set_edge_attributes(G, edge_attrs)
+    return G
+
 def featurize(data_file, charges_file=None, bo_file=None):
     csd_codes = []
     if bo_file is not None:
@@ -62,16 +93,16 @@ def featurize(data_file, charges_file=None, bo_file=None):
                 #print(total_atoms_in_mol,ndx+1+total_atoms_in_mol)
                 csd_code = data[ndx+2].split()[2]
                 # print(csd_code)
-                mol_xyz = data[ndx+1:ndx+1+total_atoms_in_mol]
+                mol_xyz = data[ndx+1:ndx+3+total_atoms_in_mol]
                 #finds complexes containing Fe (Iron)
-                if csd_code in csd_codes and total_atoms_in_mol < 30:
+                if csd_code in csd_codes and 'Fe' in np.array(mol_xyz)[1] and total_atoms_in_mol < MAX_MOLECULE_SIZE:
                 # if 'Fe' in np.array(mol_xyz)[1]:
                     mol = MolGraph()
                     # Read the data from the xyz coordinate block
                     mol.read_xyz(mol_xyz, bond_orders[csd_code])
                     elements = set(mol.elements)
                     nodes.append(mol.elements)
-                    G = to_networkx_graph(mol)
+                    G = to_networkx_graph_et(mol)
                     # if 0 not in G: continue
                     # bfs = nx.bfs_tree(G, source=0)
                     # p = from_networkx(bfs)
