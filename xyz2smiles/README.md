@@ -9,7 +9,8 @@ The environment file `xyz2smiles_environment.yml` has been provided for conda, f
 
 # Usage
 
-Just run `python xyz2smiles_using_openbabel.py` for xyz to smiles using OpenBABEL or `python xyz2mol_from_BOfile_metal_chelate.py` for xyz to smiles using rdkit. It will output SMILES strings for 15 molecules in `learn_mol/xyz2smiles/examples/tmQM/` folder.
+1. For xyz2smiles: Just run `python xyz2smiles_using_openbabel.py` for xyz to smiles using OpenBABEL or `python xyz2mol_from_BOfile_metal_chelate.py` for xyz to smiles using rdkit. It will output SMILES strings for 15 molecules in `learn_mol/xyz2smiles/examples/tmQM/` folder.
+2. For visualization of output smiles strings: See `visualization_xyz2mol.ipynb`
 
 Note that the code is not yet currently clean. I have not removed unnecessary code as there are some bugs (=O instead of OH, small c's, disconnected structures etc), i.e. "unnecessary code" might be necessary when I am fixing the above bugs.
 
