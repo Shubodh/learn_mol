@@ -176,7 +176,7 @@ class GVAE(nn.Module):
             # Reshape node predictions
             node_matrix_shape = (MAX_MOLECULE_SIZE, (len(SUPPORTED_ATOMS) + 1)) 
             node_preds_matrix = node_logits.reshape(node_matrix_shape)
-            node_preds = torch.argmax(node_preds_matrix[:, :9], dim=1)
+            node_preds = torch.argmax(node_preds_matrix[:, :len(SUPPORTED_ATOMS)], dim=1)
             
             # Get atomic numbers 
             node_preds_one_hot = to_one_hot(node_preds, options=ATOMIC_NUMBERS)

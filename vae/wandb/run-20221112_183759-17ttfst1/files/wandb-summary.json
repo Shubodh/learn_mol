@@ -1,0 +1,1 @@
+{"epoch": 15, "loss_kl/train": 4.622241020202637, "loss_recon/train": 7484.395833333333, "_timestamp": 1668258541, "_runtime": 62, "_step": 106, "loss_kl/test": 3.3519554138183594, "loss_recon/test": 26598.435546875, "Sampled molecules": 0.0}

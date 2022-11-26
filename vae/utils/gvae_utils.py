@@ -2,6 +2,7 @@ from torch_geometric.utils import to_dense_adj
 import torch
 from rdkit import Chem
 from rdkit import RDLogger 
+from rdkit.Chem import Draw
 from config.gvae import DEVICE as device
 from config.gvae import (SUPPORTED_ATOMS, SUPPORTED_EDGES, MAX_MOLECULE_SIZE, ATOMIC_NUMBERS)
 # Disable rdkit warnings
@@ -336,6 +337,8 @@ def graph_representation_to_molecule(node_types, adjacency_triu):
     # Convert RWMol to mol and Smiles
     mol = mol.GetMol()
     smiles = Chem.MolToSmiles(mol)
+    Draw.MolToFile(mol, f"mol_{smiles[:5]}.png")
+    print(ix, smiles)
 
     # Sanitize molecule (make sure it is valid)
     try:

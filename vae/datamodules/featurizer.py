@@ -12,6 +12,22 @@ from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
+def get_charges(charge_file):
+    charges = open(charge_file,"r").read().split('CSD_code = ')
+    charges_raw = [i.splitlines()[:-1] for i in charges[1:]]
+    charges = {}
+    csd_codes = []
+    for mol in charges_raw:
+        res = []
+        csd_codes.append(mol[0])
+        for k in mol[1:]:
+            c = k.split()[1]
+            if c == 'charge': continue # for 'Total charge = x'
+            res.append(float(c))
+        charges[csd_codes[-1]] = res
+    return charges, set(csd_codes)
+
 def get_bond_orders(bo_file):
     BO = open(bo_file,"r").read().split('CSD_code = ')
     BO = [i.splitlines()[:-1] for i in BO[1:]]
@@ -33,7 +49,7 @@ def get_bond_orders(bo_file):
                     res[frozenset([c_idx, p_idx])] = bo
                     i += 3
             bond_orders[csd_codes[-1]] = res
-    return bond_orders, csd_codes
+    return bond_orders, set(csd_codes)
 
 PT = Chem.GetPeriodicTable()
 def to_networkx_graph(graph: MolGraph) -> nx.Graph:
@@ -41,7 +57,16 @@ def to_networkx_graph(graph: MolGraph) -> nx.Graph:
     Atomic elements and coordinates are added to the graph as node attributes 'element' and 'xyz" respectively.
     Bond lengths are added to the graph as edge attribute 'length''"""
     G = nx.Graph(graph.adj_list)
-    node_attrs = {num: {'x': [PT.GetAtomicNumber(element), xyz[0], xyz[1], xyz[2]], 'xyz': xyz} for num, (element, xyz) in enumerate(graph)}
+    node_attrs = {}
+    for num, (element, xyz) in enumerate(graph):
+       anum = PT.GetAtomicNumber(element)
+       enc = OneHotEncoder(categories=[ATOMIC_NUMBERS])
+       anum_one_hot = enc.fit_transform([[anum]]).toarray()[0]
+       x = list(anum_one_hot)
+       x.append(graph.charges[num])
+       node_attrs[num] = {}
+       node_attrs[num]['x'] = x
+    nx.set_node_attributes(G, node_attrs)
     nx.set_node_attributes(G, node_attrs)
     edge_attrs = {edge: {'x': [graph.bond_orders[edge], length]} for edge, length in graph.bond_lengths.items()}
     nx.set_edge_attributes(G, edge_attrs)
@@ -60,8 +85,8 @@ def to_networkx_graph_et(graph: MolGraph) -> nx.Graph:
        enc = OneHotEncoder(categories=[ATOMIC_NUMBERS])
        anum_one_hot = enc.fit_transform([[anum]]).toarray()[0]
        x = list(anum_one_hot)
-       xyz = list(xyz)
-       x.extend(xyz)
+    #    xyz = list(xyz)
+    #    x.extend(xyz)
        node_attrs[num] = {}
        node_attrs[num]['x'] = x
     nx.set_node_attributes(G, node_attrs)
@@ -76,13 +101,12 @@ def to_networkx_graph_et(graph: MolGraph) -> nx.Graph:
     nx.set_edge_attributes(G, edge_attrs)
     return G
 
-def featurize(data_file, charges_file=None, bo_file=None):
-    csd_codes = []
-    if bo_file is not None:
-        bond_orders, csd_codes = get_bond_orders(bo_file)
+def featurize(data_file, charges_file, bo_file):
+    bond_orders, csd_codes_bo = get_bond_orders(bo_file)
+    charges, csd_codes_c = get_charges(charges_file)
+    valid_csd_codes = csd_codes_c & csd_codes_bo 
+
     data = open(data_file).read().splitlines()
-    if charges_file is not None:
-        charges = open(charges_file).read().splitlines()
     graphs = []
     nodes = []
     data_list = []
@@ -95,11 +119,11 @@ def featurize(data_file, charges_file=None, bo_file=None):
                 # print(csd_code)
                 mol_xyz = data[ndx+1:ndx+3+total_atoms_in_mol]
                 #finds complexes containing Fe (Iron)
-                if csd_code in csd_codes and 'Fe' in np.array(mol_xyz)[1] and total_atoms_in_mol < MAX_MOLECULE_SIZE:
-                # if 'Fe' in np.array(mol_xyz)[1]:
+                # if csd_code in valid_csd_codes and total_atoms_in_mol < MAX_MOLECULE_SIZE:
+                if 'Fe' in np.array(mol_xyz)[1] and csd_code in valid_csd_codes:
                     mol = MolGraph()
                     # Read the data from the xyz coordinate block
-                    mol.read_xyz(mol_xyz, bond_orders[csd_code])
+                    mol.read_xyz(mol_xyz, bond_orders[csd_code], charges[csd_code])
                     elements = set(mol.elements)
                     nodes.append(mol.elements)
                     G = to_networkx_graph_et(mol)
