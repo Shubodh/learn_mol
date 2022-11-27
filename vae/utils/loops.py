@@ -12,6 +12,7 @@ def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True):
     n = 0
     if train:
         for data in loader:
+            data = data.to('cuda')
             n += 1
             optimizer.zero_grad()
             z = model.encode(data.x, data.edge_index, data.edge_attr)
@@ -35,6 +36,7 @@ def test_vgae(epoch, model, loader):
     running_ap = 0
     n = 0
     for data in loader: 
+        data = data.to('cuda')
         n += 1
         with torch.no_grad():
             z = model.encode(data.x, data.edge_index, data.edge_attr)

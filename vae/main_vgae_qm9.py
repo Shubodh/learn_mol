@@ -23,32 +23,33 @@ from torch_geometric.datasets import QM9
 wandb.login()
 device = 'cuda'
 
-data_file = './data/tmQM_X.xyz'
-charges_file = './data/tmQM_X.q'
-bo_file = './data/tmQM_X.BO'
-# data_list = featurize(data_file, charges_file, bo_file)
-# with open('./data/data_list_bo.pkl', 'wb') as handle:
-#     pickle.dump(data_list, handle)
-with open('./data/data_list_bo.pkl', 'rb') as handle:
-    data_list = pickle.load(handle)
-N = len(data_list)
+# data_file = './data/tmQM_X.xyz'
+# charges_file = './data/tmQM_X.q'
+# bo_file = './data/tmQM_X.BO'
+# # data_list = featurize(data_file, charges_file, bo_file)
+# # with open('./data/data_list_bo.pkl', 'wb') as handle:
+# #     pickle.dump(data_list, handle)
+# with open('./data/data_list_bo.pkl', 'rb') as handle:
+#     data_list = pickle.load(handle)
+dataset = QM9('./data/qm9')
+N = len(dataset)
 split = [0.8, 0.2]
 N_train = int(N * split[0])
 random.seed(42)
-random.shuffle(data_list)
+dataset.shuffle()
 batch_size = 32
 lr = 0.001
 num_layers = 3
 out_channels = 2
-num_features = data_list[0].x.shape[1]
+num_features = dataset[0].x.shape[1]
 epochs = 100
-edge_dim = data_list[0].edge_attr.shape[1]
+edge_dim = dataset[0].edge_attr.shape[1]
 heads = 1
-train_data = data_list[:N_train]
-test_data = data_list[N_train:]
+train_data = dataset[:N_train]
+test_data = dataset[N_train:]
 train_loader = DataLoader(train_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
-beta=0
+beta=1
 model = VGAutoEncoder(num_features, out_channels, num_layers=num_layers, edge_dim=edge_dim, heads=heads)
 model = model.to(device)
 
@@ -91,4 +92,4 @@ for i in metrics:
 for epoch in range(1, epochs + 1):
     loss = train_vgae(epoch, model, train_loader, optimizer, beta)
     test_loss = test_vgae(epoch, model, test_loader)
-isomap(model, data_list, f'./maps/vgae_only_recon.png')
+isomap(model, dataset, f'./maps/vgae_only_recon.png')
