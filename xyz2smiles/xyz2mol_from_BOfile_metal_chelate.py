@@ -319,8 +319,10 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
         # 4: Chem.BondType.AROMATIC
     }
 
-    # print("TODO: AROMATIC bond type")# see gvae_utils.py")
-    # print(np.max(BO_matrix))
+    # print("TODO: AROMATIC bond type")
+    # The problem is: Aromatic rings is getting BO of almost 1.5, instead of
+    # 1/2. Will have to see how to account this
+    #     58  C   3.983        C   60 1.459    C   56 1.406    H   59 0.967
 
     for i in range(l):
         for j in range(i + 1, l):
