@@ -315,18 +315,23 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
     bondTypeDict = {
         1: Chem.BondType.SINGLE,
         2: Chem.BondType.DOUBLE,
-        3: Chem.BondType.TRIPLE#,
-        # 4: Chem.BondType.AROMATIC
+        3: Chem.BondType.TRIPLE,
+        4: Chem.BondType.AROMATIC
     }
 
     # print("TODO: AROMATIC bond type")
+    # almost 1.5 = 1.3 to 1.6
     # The problem is: Aromatic rings is getting BO of almost 1.5, instead of
     # 1/2. Will have to see how to account this
     #     58  C   3.983        C   60 1.459    C   56 1.406    H   59 0.967
 
     for i in range(l):
         for j in range(i + 1, l):
-            bo = int(round(BO_matrix[i, j]))
+            if 1.4 < BO_matrix[i,j] < 1.5: #Play with thresholds
+                bo = 4 # for aromatic bond
+            else:
+                bo = int(round(BO_matrix[i, j]))
+
             if (bo == 0):
                 continue
             bt = bondTypeDict.get(bo, Chem.BondType.SINGLE)
