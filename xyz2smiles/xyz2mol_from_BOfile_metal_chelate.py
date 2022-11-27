@@ -315,8 +315,12 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
     bondTypeDict = {
         1: Chem.BondType.SINGLE,
         2: Chem.BondType.DOUBLE,
-        3: Chem.BondType.TRIPLE
+        3: Chem.BondType.TRIPLE#,
+        # 4: Chem.BondType.AROMATIC
     }
+
+    # print("TODO: AROMATIC bond type")# see gvae_utils.py")
+    # print(np.max(BO_matrix))
 
     for i in range(l):
         for j in range(i + 1, l):
@@ -485,8 +489,8 @@ if __name__ == "__main__":
     data_path = '/home/shubodh/OneDrive/mll_projects/2022/xyz2mol/examples/tmQM/'
     full_bo_file = 'tmQM_X.BO'
 
-    all_ids = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15] #range(1,16) #[1, 2, 3] #
-    # all_ids = [3]
+    # all_ids = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15] #range(1,16) #[1, 2, 3] #
+    all_ids = [2]
 
     # IMPORTANT NOTE (s) about tmQM dataset: (Modifications made etc)
     # 1. For tmQM_X1_Fe_mol_7.BO, removed last line since no of atoms was > 84 (i.e. was 85)
@@ -524,6 +528,16 @@ if __name__ == "__main__":
             # Canonical hack
             isomeric_smiles = not args.ignore_chiral
             smiles_original = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
+
+            #TODO: Sanitize molecule (make sure it is valid), see gvae_utils.py
+            # print("TODO now: sanitize mol")
+            # try:
+                # Chem.SanitizeMol(mol)
+            # except:
+                # smiles = None
+
+
+
 
             m = Chem.MolFromSmiles(smiles_original)
             smiles_FromTo = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
