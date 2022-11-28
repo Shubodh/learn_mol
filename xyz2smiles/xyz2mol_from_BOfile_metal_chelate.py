@@ -327,7 +327,9 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
 
     for i in range(l):
         for j in range(i + 1, l):
-            if 1.4 < BO_matrix[i,j] < 1.5: #Play with thresholds
+            # if 1.4 < BO_matrix[i,j] < 1.5: #Play with thresholds
+            if 1.45 < BO_matrix[i,j] < 1.5: #Play with thresholds
+            # if 1.4 < BO_matrix[i,j] < 1.6: #Play with thresholds
                 bo = 4 # for aromatic bond
             else:
                 bo = int(round(BO_matrix[i, j]))
@@ -496,8 +498,10 @@ if __name__ == "__main__":
     data_path = '/home/shubodh/OneDrive/mll_projects/2022/xyz2mol/examples/tmQM/'
     full_bo_file = 'tmQM_X.BO'
 
-    # all_ids = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15] #range(1,16) #[1, 2, 3] #
-    all_ids = [2]
+    # all_ids = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15] # excluding rdkit failure ones
+    all_ids = [1, 2, 3, 4, 5, 6, 10, 11, 12, 13, 14, 15] # excluding obabel + rdkit failure ones #
+    # all_ids = [1, 2, 3, 10, 11, 12, 13, 14, 15] #range(1,16) #[1, 2, 3] #
+    # all_ids = [2]
 
     # IMPORTANT NOTE (s) about tmQM dataset: (Modifications made etc)
     # 1. For tmQM_X1_Fe_mol_7.BO, removed last line since no of atoms was > 84 (i.e. was 85)
