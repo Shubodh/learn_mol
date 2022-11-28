@@ -37,13 +37,13 @@ test_loader = DataLoader(test_data, batch_size=batch_size)
 
 # Define loss and optimizer
 loss_fn = gvae_loss
-lr = 0.001
-kl_beta = 0.5
+lr = 0.01
+kl_beta = 0.8
 encoder_embedding_size=64
 edge_dim=3
 latent_embedding_size=64
-decoder_hidden_neurons=256
-epochs = 100
+decoder_hidden_neurons=128
+epochs = 200
 print(train_data[0].x.shape, train_data[0].edge_attr.shape, train_data[0].edge_index.shape)
 model = GVAE(
             feature_size=train_data[0].x.shape[1], 
@@ -98,10 +98,10 @@ def run_one_epoch(data_loader, type, epoch, kl_beta):
             print("Error: ", error)
     
     # Perform sampling
-    if type == "Test":
-        generated_mols = model.sample_mols(num=250)
-        print(f"Generated {generated_mols} molecules.")
-        wandb.log({"Sampled molecules": float(generated_mols), "epoch": epoch})
+    # if type == "Test":
+    #     generated_mols = model.sample_mols(num=250)
+    #     print(f"Generated {generated_mols} molecules.")
+    #     wandb.log({"Sampled molecules": float(generated_mols), "epoch": epoch})
 
 wandb.init(project="graphVAE", entity="shivanshseth", config={
     "beta": kl_beta,
@@ -135,3 +135,8 @@ for epoch in range(epochs):
         print("Start test epoch...")
         model.eval()
         run_one_epoch(test_loader, type="Test", epoch=epoch, kl_beta=kl_beta)
+torch.save(model, './gvae.m')
+
+generated_mols = model.sample_mols(num=250)
+print(f"Generated {generated_mols} molecules.")
+wandb.log({"Sampled molecules": float(generated_mols), "epoch": epoch})

@@ -15,7 +15,7 @@ atomic_radii = dict(Ac=1.88, Ag=1.59, Al=1.35, Am=1.51, As=1.21, Au=1.50, B=0.83
 class MolGraph:
     """Represents a molecular graph."""
     __slots__ = ['elements', 'x', 'y', 'z', 'adj_list',
-                 'atomic_radii', 'bond_lengths', 'bond_orders']
+                 'atomic_radii', 'bond_lengths', 'bond_orders', 'charges']
 
     def __init__(self):
         self.elements = []
@@ -24,21 +24,26 @@ class MolGraph:
         self.z = []
         self.adj_list = {}
         self.atomic_radii = []
+        self.charges = None
         self.bond_lengths = {}
         self.bond_orders = None
 
-    def read_xyz(self,molxyz,bo=None):
+    def read_xyz(self, molxyz, bo=None, charges=None):
         """Reads an XYZ file, searches for elements and their cartesian coordinates
         and adds them to corresponding arrays."""
-        pattern = re.compile(r'([A-Za-z]{1,3})\s*(-?\d+(?:\.\d+)?)\s*(-?\d+(?:\.\d+)?)\s*(-?\d+(?:\.\d+)?)')
+        pattern = re.compile(
+            r'([A-Za-z]{1,3})\s*(-?\d+(?:\.\d+)?)\s*(-?\d+(?:\.\d+)?)\s*(-?\d+(?:\.\d+)?)')
         for element, x, y, z in pattern.findall(str(molxyz)):
             self.elements.append(element)
             self.x.append(float(x))
             self.y.append(float(y))
             self.z.append(float(z))
-        self.atomic_radii = [atomic_radii[element] for element in self.elements]
-        if bo is not None:  
+        self.atomic_radii = [atomic_radii[element]
+                             for element in self.elements]
+        if bo is not None:
             self.bond_orders = bo
+        if charges is not None:
+            self.charges = charges
         self._generate_adjacency_list()
 
     def _generate_adjacency_list(self):
@@ -47,16 +52,19 @@ class MolGraph:
         for i, j in combinations(node_ids, 2):
             x_i, y_i, z_i = self.__getitem__(i)[1]
             x_j, y_j, z_j = self.__getitem__(j)[1]
-            distance = sqrt((x_i - x_j) ** 2 + (y_i - y_j) ** 2 + (z_i - z_j) ** 2)
+            distance = sqrt((x_i - x_j) ** 2 + (y_i - y_j)
+                            ** 2 + (z_i - z_j) ** 2)
             if self.bond_orders is None:
                 if 0.1 < distance < (self.atomic_radii[i] + self.atomic_radii[j]) * 1.3:
-                    dist_limit = (self.atomic_radii[i] + self.atomic_radii[j]) * 1.3
+                    dist_limit = (
+                        self.atomic_radii[i] + self.atomic_radii[j]) * 1.3
                     self.adj_list.setdefault(i, set()).add(j)
                     self.adj_list.setdefault(j, set()).add(i)
                     self.bond_lengths[frozenset([i, j])] = round(distance, 5)
             else:
                 if frozenset([i, j]) in self.bond_orders:
-                    dist_limit = (self.atomic_radii[i] + self.atomic_radii[j]) * 1.3
+                    dist_limit = (
+                        self.atomic_radii[i] + self.atomic_radii[j]) * 1.3
                     self.bond_lengths[frozenset([i, j])] = round(distance, 5)
                     self.adj_list.setdefault(i, set()).add(j)
                     self.adj_list.setdefault(j, set()).add(i)
@@ -72,12 +80,10 @@ class MolGraph:
                     continue
                 edges.add(edge)
                 yield node, neighbour
-    
+
     def __len__(self):
         return len(self.elements)
 
     def __getitem__(self, position):
         return self.elements[position], (
             self.x[position], self.y[position], self.z[position])
-
-

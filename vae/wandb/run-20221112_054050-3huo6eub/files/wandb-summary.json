@@ -1,0 +1,1 @@
+{"epoch": 499, "loss_kl/train": 117.61064147949219, "loss_recon/train": 142.16853968302408, "_timestamp": 1668213217, "_runtime": 1367, "_step": 3299, "loss_kl/test": 112.9170150756836, "loss_recon/test": 4712.98486328125, "Sampled molecules": 0.0, "_wandb": {"runtime": 1366}}
