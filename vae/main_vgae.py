@@ -17,7 +17,7 @@ import torch_geometric.transforms as T
 from torch_geometric.utils import train_test_split_edges
 from datamodules.featurizer import featurize
 from models.vgae import VGAutoEncoder
-from utils.loops import train_vgae, test_vgae, isomap
+from utils.loops import train_vgae, test_vgae, map_latent_space
 import pickle
 from torch_geometric.datasets import QM9
 wandb.login()
@@ -91,4 +91,4 @@ for i in metrics:
 for epoch in range(1, epochs + 1):
     loss = train_vgae(epoch, model, train_loader, optimizer, beta)
     test_loss = test_vgae(epoch, model, test_loader)
-isomap(model, data_list, f'./maps/vgae_only_recon.png')
+map_latent_space(model, data_list, f'./maps/vgae_only_recon.png')

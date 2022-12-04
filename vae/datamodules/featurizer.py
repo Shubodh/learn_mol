@@ -82,7 +82,7 @@ def to_networkx_graph_et(graph: MolGraph) -> nx.Graph:
     node_attrs = {}
     for num, (element, xyz) in enumerate(graph):
        anum = PT.GetAtomicNumber(element)
-       enc = OneHotEncoder(categories=[ATOMIC_NUMBERS])
+       enc = OneHotEncoder(categories=[ATOMIC_NUMBERS])  # type: ignore
        anum_one_hot = enc.fit_transform([[anum]]).toarray()[0]
        x = list(anum_one_hot)
     #    xyz = list(xyz)
@@ -94,7 +94,7 @@ def to_networkx_graph_et(graph: MolGraph) -> nx.Graph:
     for edge, length in graph.bond_lengths.items():
         bo = int(round(graph.bond_orders[edge]))
         bt = bondTypeDict.get(bo, "SINGLE")
-        enc = OneHotEncoder(categories=[SUPPORTED_EDGES])
+        enc = OneHotEncoder(categories=[SUPPORTED_EDGES])  # type: ignore
         bt_one_hot = enc.fit_transform([[bt]]).toarray()[0]
         edge_attrs[edge] = {}
         edge_attrs[edge]['x'] = list(bt_one_hot)
