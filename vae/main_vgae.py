@@ -3,7 +3,6 @@ from plotly.offline import init_notebook_mode, iplot
 import networkx as nx
 import numpy as np
 import torch
-import re
 from itertools import combinations
 from math import sqrt
 from torch_geometric.nn import DimeNet
@@ -19,42 +18,64 @@ from datamodules.featurizer import featurize
 from models.vgae import VGAutoEncoder
 from utils.loops import train_vgae, test_vgae, map_latent_space
 import pickle
-from torch_geometric.datasets import QM9
-wandb.login()
-device = 'cuda'
+import sys
+import os
+import yaml
 
-data_file = './data/tmQM_X.xyz'
-charges_file = './data/tmQM_X.q'
-bo_file = './data/tmQM_X.BO'
-# data_list = featurize(data_file, charges_file, bo_file)
-# with open('./data/data_list_bo.pkl', 'wb') as handle:
-#     pickle.dump(data_list, handle)
-with open('./data/data_list_bo.pkl', 'rb') as handle:
-    data_list = pickle.load(handle)
+wandb.login()
+
+config_file = sys.argv[1]
+if not os.path.exists(config_file):
+    print("Config file does not exist")
+    exit(1)
+
+config = yaml.safe_load(config_file)
+device = config.get("device", "cuda")
+data_file = config.get("data_file", "./data/tmQM_X.xyz")
+charges_file = config.get("charges_file", "./data/tmQM_X.q")
+bo_file = config.get("bo_file", "./data/tmQM_X.BO")
+batch_size = config.get("batch_size", 32)
+lr = config.get("lr", 0.001)
+num_layers = config.get("num_layers", 3)
+out_channels = config.get("out_channels", 2)
+epochs = config.get("epochs", 50)
+beta = config.get("beta", 0.3)
+pre_processed_file = config.get("pre_processed_file", "./data/data_list.pkl")
+save_features = config.get("features_file", "./data/data_list.pkl")
+save_model = config.get("save_model", False)
+load_model = config.get("load_model", "False")
+latent_space_file = config.get("latent_space_file", "False")
+
+if not pre_processed_file  == "False": 
+    with open(pre_processed_file, 'rb') as handle:
+        data_list = pickle.load(handle)
+else:
+    data_list = featurize(data_file, charges_file, bo_file)
+    if not save_features == "False":
+    with open(save_features, 'wb') as handle:
+        pickle.dump(data_list, handle)
+
 N = len(data_list)
 split = [0.8, 0.2]
 N_train = int(N * split[0])
+
 random.seed(42)
 random.shuffle(data_list)
-batch_size = 32
-lr = 0.001
-num_layers = 3
-out_channels = 2
 num_features = data_list[0].x.shape[1]
-epochs = 100
 edge_dim = data_list[0].edge_attr.shape[1]
 heads = 1
 train_data = data_list[:N_train]
 test_data = data_list[N_train:]
 train_loader = DataLoader(train_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
-beta=0
-model = VGAutoEncoder(num_features, out_channels, num_layers=num_layers, edge_dim=edge_dim, heads=heads)
-model = model.to(device)
+model_config = {
+    "in_channels": num_features,
+    "out_channels": out_channels,
+    "num_layers": num_layers,
+    "edge_dim": edge_dim,
+    "heads": heads
+    }
 
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-torch.save(model.state_dict(), 'temp.m')
-model.load_state_dict(torch.load('temp.m'))
 config = {
     "model": "vgae",
     "beta": beta,
@@ -87,8 +108,26 @@ metrics = [
 for i in metrics:
     wandb.define_metric(name=i, step_metric='epoch')
 
+if not load_model == "False": 
+    checkpoint = torch.load(load_model)
+    model_config = checkpoint['model_config']
+    model = VGAutoEncoder(**model_config)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model = model.to(device)
+    print("Loaded model from checkpoint")
+else:
+    model = VGAutoEncoder(**model_config)
+    model = model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    for epoch in range(1, epochs + 1):
+        loss = train_vgae(epoch, model, train_loader, optimizer, beta)
+        test_loss = test_vgae(epoch, model, test_loader)
 
-for epoch in range(1, epochs + 1):
-    loss = train_vgae(epoch, model, train_loader, optimizer, beta)
-    test_loss = test_vgae(epoch, model, test_loader)
-map_latent_space(model, data_list, f'./maps/vgae_only_recon.png')
+if save_model:
+    torch.save({
+            'model_state_dict': model.state_dict(),
+            'model_config': model_config
+            }, 'checkpoints/gatconv' + wandb.run.name + '.chkpt')
+
+if not latent_space_file == "False":
+    map_latent_space(model, data_list, latent_space_file)
