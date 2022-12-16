@@ -22,7 +22,6 @@ import sys
 import os
 import yaml
 
-wandb.login()
 
 config_file = sys.argv[1]
 if not os.path.exists(config_file):
@@ -88,26 +87,28 @@ config = {
     "node_features": num_features,
     "edge_dim": edge_dim
 }
-wandb.init(project="vgae", entity="mll-metal", config={
-    "beta": beta,
-    "num_layers": num_layers,
-    "heads": heads,
-    "latent_channels": out_channels,
-    "learning_rate": lr,
-    "batch_size": batch_size
-})
-metrics = [
-            "loss_kl/train",
-            "loss_kl/val",
-            "loss/test",
-            "loss_kl/test",
-            "loss/val",
-            "loss_kl/val",
-            "auc/val",
-            "ap/val",
-            ]
-for i in metrics:
-    wandb.define_metric(name=i, step_metric='epoch')
+if save_wandb: 
+    wandb.login()
+    wandb.init(project="vgae", entity="mll-metal", config={
+        "beta": beta,
+        "num_layers": num_layers,
+        "heads": heads,
+        "latent_channels": out_channels,
+        "learning_rate": lr,
+        "batch_size": batch_size
+    })
+    metrics = [
+                "loss_kl/train",
+                "loss_kl/val",
+                "loss/test",
+                "loss_kl/test",
+                "loss/val",
+                "loss_kl/val",
+                "auc/val",
+                "ap/val",
+                ]
+    for i in metrics:
+        wandb.define_metric(name=i, step_metric='epoch')
 
 if not load_model == "False": 
     checkpoint = torch.load(load_model)
@@ -121,8 +122,8 @@ else:
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     for epoch in range(1, epochs + 1):
-        loss = train_vgae(epoch, model, train_loader, optimizer, beta)
-        test_loss = test_vgae(epoch, model, test_loader)
+        loss = train_vgae(epoch, model, train_loader, optimizer, beta, save_wandb=save_wandb)
+        test_loss = test_vgae(epoch, model, test_loader, save_wandb=save_wandb)
 
 if save_model:
     torch.save({
