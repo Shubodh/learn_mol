@@ -61,7 +61,7 @@ def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='g
 
     return float((running_loss+running_loss_kl)/n)
 
-def test_vgae(epoch, model, loader, save_wandb=True, encoder='dimenet'):
+def test_vgae(epoch, model, loader, save_wandb=True, encoder='gcn'):
     model.eval()
     running_loss = 0
     running_loss_kl = 0

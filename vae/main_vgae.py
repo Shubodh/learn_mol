@@ -21,7 +21,7 @@ import pickle
 import sys
 import os
 import yaml
-
+from torch_geometric.datasets import QM9
 
 config_file = sys.argv[1]
 if not os.path.exists(config_file):
@@ -39,6 +39,7 @@ with open(config_file, 'r') as stream:
     out_channels = config.get("out_channels", 2)
     epochs = config.get("epochs", 50)
     beta = config.get("beta", 0.3)
+    dataset = config.get("dataset", "qm9")
     pre_processed_file = config.get("pre_processed_file", "./data/data_list.pkl")
     save_features = config.get("features_file", "./data/data_list.pkl")
     save_model = config.get("save_model", False)
@@ -46,14 +47,22 @@ with open(config_file, 'r') as stream:
     latent_space_file = config.get("latent_space_file", "False")
     save_wandb = config.get("save_wandb", True)
 
-if not pre_processed_file  == "False": 
-    with open(pre_processed_file, 'rb') as handle:
-        data_list = pickle.load(handle)
-else:
-    data_list = featurize(data_file, charges_file, bo_file)
-    if not save_features == "False":
-        with open(save_features, 'wb') as handle:
-            pickle.dump(data_list, handle)
+data_list = []
+if dataset == 'tmqm':
+    if not pre_processed_file  == "False": 
+        with open(pre_processed_file, 'rb') as handle:
+            data_list = pickle.load(handle)
+    else:
+        data_list = featurize(data_file, charges_file, bo_file)
+        if not save_features == "False":
+            with open(save_features, 'wb') as handle:
+                pickle.dump(data_list, handle)
+
+if dataset == 'qm9':
+    data_list_raw = QM9('./data/qm9')
+    N = len(data_list_raw)
+    N = 20000
+    data_list = [g for g in data_list_raw[:N] if g.x.shape[0] < 20] 
 
 N = len(data_list)
 split = [0.8, 0.2]
