@@ -45,6 +45,7 @@ save_features = config.get("features_file", "./data/data_list.pkl")
 save_model = config.get("save_model", False)
 load_model = config.get("load_model", "False")
 latent_space_file = config.get("latent_space_file", "False")
+save_wandb = config.get("save_wandb", True)
 
 if not pre_processed_file  == "False": 
     with open(pre_processed_file, 'rb') as handle:
@@ -52,8 +53,8 @@ if not pre_processed_file  == "False":
 else:
     data_list = featurize(data_file, charges_file, bo_file)
     if not save_features == "False":
-    with open(save_features, 'wb') as handle:
-        pickle.dump(data_list, handle)
+        with open(save_features, 'wb') as handle:
+            pickle.dump(data_list, handle)
 
 N = len(data_list)
 split = [0.8, 0.2]
