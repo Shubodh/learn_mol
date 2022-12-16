@@ -141,4 +141,4 @@ if save_model:
             }, 'checkpoints/gatconv' + wandb.run.name + '.chkpt')
 
 if not latent_space_file == "False":
-    map_latent_space(model, data_list, latent_space_file)
+    map_latent_space(model, data_list, latent_space_file, qm9=dataset=='qm9')
