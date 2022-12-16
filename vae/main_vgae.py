@@ -15,7 +15,7 @@ from torch import Tensor
 import torch_geometric.transforms as T
 from torch_geometric.utils import train_test_split_edges
 from datamodules.featurizer import featurize
-from models.vgae import VGAutoEncoder
+from models.vgae import VGAutoEncoder, VGAE_Dimenet
 from utils.loops import train_vgae, test_vgae, map_latent_space
 import pickle
 import sys
@@ -36,6 +36,7 @@ with open(config_file, 'r') as stream:
     batch_size = config.get("batch_size", 32)
     lr = config.get("lr", 0.001)
     num_layers = config.get("num_layers", 3)
+    hidden_channels = config.get("hidden_channels", 8)
     out_channels = config.get("out_channels", 2)
     epochs = config.get("epochs", 50)
     beta = config.get("beta", 0.3)
@@ -79,6 +80,7 @@ train_loader = DataLoader(train_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 model_config = {
     "in_channels": num_features,
+    "hidden_channels": hidden_channels,
     "out_channels": out_channels,
     "num_layers": num_layers,
     "edge_dim": edge_dim,
@@ -122,12 +124,12 @@ if save_wandb:
 if not load_model == "False": 
     checkpoint = torch.load(load_model)
     model_config = checkpoint['model_config']
-    model = VGAutoEncoder(**model_config)
+    model = VGAE_Dimenet(**model_config)
     model.load_state_dict(checkpoint['model_state_dict'])
     model = model.to(device)
     print("Loaded model from checkpoint")
 else:
-    model = VGAutoEncoder(**model_config)
+    model = VGAE_Dimenet(**model_config)
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     for epoch in range(1, epochs + 1):

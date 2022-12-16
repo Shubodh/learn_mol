@@ -28,7 +28,7 @@ def slice_atom_type_from_node_feats(node_features, as_index=False):
         atom_types = torch.argmax(atom_types_one_hot, dim=1)
     return atom_types
 
-def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='gcn', save_wandb=True):
+def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, save_wandb=True):
     model.train()
     running_loss_kl = 0
     running_loss = 0
@@ -40,9 +40,7 @@ def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='g
             data = data.to(device)
             n += 1
             optimizer.zero_grad()
-            if encoder == 'dimenet':
-                z = model.encode(data.z, data.pos, data.edge_index, data.edge_attr, data.batch)
-            else: z = model.encode(data.x, data.edge_index, data.edge_attr)
+            z = model.encode(data.z, data.pos, data.edge_index, data.edge_attr, data.batch)
             loss = model.recon_loss(z, data.edge_index)
             #if args.variational:
             kl = model.kl_loss()
@@ -61,7 +59,7 @@ def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='g
 
     return float((running_loss+running_loss_kl)/n)
 
-def test_vgae(epoch, model, loader, save_wandb=True, encoder='gcn'):
+def test_vgae(epoch, model, loader, save_wandb=True):
     model.eval()
     running_loss = 0
     running_loss_kl = 0
@@ -72,9 +70,7 @@ def test_vgae(epoch, model, loader, save_wandb=True, encoder='gcn'):
         n += 1
         data = data.to(device)
         with torch.no_grad():
-            if encoder == 'dimenet':
-                z = model.encode(data.z, data.pos, data.edge_index, data.edge_attr, data.batch)
-            else: z = model.encode(data.x, data.edge_index, data.edge_attr)
+            z = model.encode(data.z, data.pos, data.edge_index, data.edge_attr, data.batch)
             loss = model.recon_loss(z, data.edge_index)
             kl = model.kl_loss()
             running_loss += loss.item()
