@@ -15,7 +15,7 @@ from torch import Tensor
 import torch_geometric.transforms as T
 from torch_geometric.utils import train_test_split_edges
 from datamodules.featurizer import featurize
-from models.vgae import VGAutoEncoder, VGAE_Dimenet
+from models.vgae import VGAE_Dimenet
 from utils.loops import train_vgae, test_vgae, map_latent_space
 import pickle
 import sys
