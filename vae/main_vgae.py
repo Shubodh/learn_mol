@@ -99,6 +99,7 @@ config = {
 if save_wandb: 
     wandb.login()
     wandb.init(project="vgae", entity="mll-metal", config={
+        "model": "vgae_gatconv",
         "beta": beta,
         "num_layers": num_layers,
         "heads": heads,
