@@ -128,7 +128,7 @@ if __name__ == '__main__':
 	# for G in graphs:
 	# 	print(len(G.nodes))
 
-	graphs_few = graphs[0:5]
+	graphs_few = graphs[0:10]
 
 	# iterate two lists at the same time and also keep track of the index
 	for i, (G, csd_code) in enumerate(zip(graphs_few, csd_codes)):
