@@ -1,4 +1,4 @@
-import torch
+import torch # type: ignore
 from torch_geometric.nn import GCNConv, GATConv, VGAE
 from models.dimenet import DimeNet
 

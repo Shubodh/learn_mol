@@ -28,7 +28,7 @@ def slice_atom_type_from_node_feats(node_features, as_index=False):
         atom_types = torch.argmax(atom_types_one_hot, dim=1)
     return atom_types
 
-def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='gcn'):
+def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='gcn', save_wandb=True):
     model.train()
     running_loss_kl = 0
     running_loss = 0
@@ -55,12 +55,13 @@ def train_vgae(epoch, model, loader, optimizer, beta=0.2, train=True, encoder='g
             running_ap += ap.item()
             loss.backward()
             optimizer.step()
-        wandb.log({"epoch": epoch, 'loss_kl/train': running_loss_kl/n, 'loss_recon/train': running_loss/n,
+        if save_wandb:
+            wandb.log({"epoch": epoch, 'loss_kl/train': running_loss_kl/n, 'loss_recon/train': running_loss/n,
                    'auc/train': running_auc/n, 'ap/train': running_ap/n})
 
     return float((running_loss+running_loss_kl)/n)
 
-def test_vgae(epoch, model, loader, encoder='dimenet'):
+def test_vgae(epoch, model, loader, save_wandb=True, encoder='gcn'):
     model.eval()
     running_loss = 0
     running_loss_kl = 0
@@ -82,7 +83,8 @@ def test_vgae(epoch, model, loader, encoder='dimenet'):
             auc, ap = model.test(z, data.edge_index, neg_edges)
             running_auc += auc.item()
             running_ap += ap.item()
-    wandb.log({"epoch": epoch, 'loss_kl/val': running_loss_kl/n, 'loss_recon/val': running_loss/n, 'auc/val': running_auc/n, 'ap/val': running_ap/n})
+    if save_wandb:
+        wandb.log({"epoch": epoch, 'loss_kl/val': running_loss_kl/n, 'loss_recon/val': running_loss/n, 'auc/val': running_auc/n, 'ap/val': running_ap/n})
     return float((running_loss+running_loss_kl)/n) 
 
 def map_latent_space(model, data, file_name, qm9=False, ind=False, mol_ind=False):
