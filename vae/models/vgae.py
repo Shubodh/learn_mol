@@ -19,8 +19,6 @@ class VariationalDimenetEncoder(torch.nn.Module):
             num_after_skip=2,
             num_output_layers=3, 
         ))
-        if num_layers > 1:
-            self.conv1.append(GATConv(hidden_channels, hidden_channels, heads=heads))
         self.conv1 = torch.nn.ModuleList(self.conv1)
         # self.conv_mu = GCNConv(hidden_channels, out_channels)
         # self.conv_logstd = GCNConv(hidden_channels, out_channels)
@@ -32,9 +30,10 @@ class VariationalDimenetEncoder(torch.nn.Module):
         for conv in self.conv1:
             x = conv(x, pos, batch).relu()
         # print('Post_dimenet:', x.shape)
-        mu = self.conv_mu(x, edge_index)
+        print(edge_index.shape)
+        mu = self.conv_mu(x, edge_index=edge_index)
         # print('Post_mu:', x.shape)
-        std = self.conv_logstd(x, edge_index)
+        std = self.conv_logstd(x, edge_index=edge_index)
         return mu, std
 
 def VGAE_Dimenet(in_channels, out_channels, hidden_channels, edge_dim=1, heads=1,num_layers=1):
