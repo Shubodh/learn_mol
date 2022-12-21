@@ -30,7 +30,6 @@ class VariationalDimenetEncoder(torch.nn.Module):
         for conv in self.conv1:
             x = conv(x, pos, batch).relu()
         # print('Post_dimenet:', x.shape)
-        print(edge_index.shape)
         mu = self.conv_mu(x, edge_index=edge_index)
         # print('Post_mu:', x.shape)
         std = self.conv_logstd(x, edge_index=edge_index)
