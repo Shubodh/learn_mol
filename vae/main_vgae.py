@@ -81,7 +81,6 @@ test_loader = DataLoader(test_data, batch_size=batch_size)
 model_config = {
     "in_channels": num_features,
     "hidden_channels": hidden_channels,
-    "out_channels": out_channels,
     "num_layers": num_layers,
     "edge_dim": edge_dim,
     "heads": heads
