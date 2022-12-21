@@ -70,7 +70,7 @@ def test_vgae(epoch, model, loader, save_wandb=True):
         n += 1
         data = data.to(device)
         with torch.no_grad():
-            z = model.encode(data.z, data.pos, data.edge_index, data.edge_attr, data.batch)
+            z = model.encode(data.z, data.pos, data.batch)
             loss = model.recon_loss(z, data.edge_index)
             kl = model.kl_loss()
             running_loss += loss.item()
