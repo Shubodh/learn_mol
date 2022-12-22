@@ -63,7 +63,8 @@ if dataset == 'qm9':
     data_list_raw = QM9('./data/qm9')
     N = len(data_list_raw)
     N = 20000
-    data_list = [g for g in data_list_raw[:N] if g.x.shape[0] < 20] 
+    data_list = [g for g in data_list_raw[:N] if g.x.shape[0] < 20]  # Choose small molecules, < 20 atoms.
+    # TODO-1: It makes more sense to finally have data_list as 20000 (after <20), rather than first picking 20000, then doing <20 (now 17000)
 
 N = len(data_list)
 split = [0.8, 0.2]
@@ -71,8 +72,8 @@ N_train = int(N * split[0])
 
 random.seed(42)
 random.shuffle(data_list)
-num_features = data_list[0].x.shape[1]
-edge_dim = data_list[0].edge_attr.shape[1]
+num_features = data_list[0].x.shape[1] #TODO-2: This is using x.shape[1] i.e. 11 and not data.z's shape? Should it not be z.shape[0]? (For QM9)
+edge_dim = data_list[0].edge_attr.shape[1] #This is 4 for QM9 data. #TODO-3: Is this ok? see todo-2?
 heads = 1
 train_data = data_list[:N_train]
 test_data = data_list[N_train:]
