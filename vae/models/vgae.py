@@ -19,11 +19,9 @@ class VariationalDimenetEncoder(torch.nn.Module):
             num_after_skip=2,
             num_output_layers=3, 
         ))
-        if num_layers > 1:
-            self.conv1.append(GATConv(hidden_channels, hidden_channels, heads=heads))
         self.conv1 = torch.nn.ModuleList(self.conv1)
 
-    def forward(self, x, pos, batch):
+    def forward(self, x, pos, batch=None):
         # print('Input:', x.shape)
         for conv in self.conv1:
             x = conv(x, pos, batch).relu()

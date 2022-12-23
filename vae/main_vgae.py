@@ -34,7 +34,7 @@ with open(config_file, 'r') as stream:
     charges_file = config.get("charges_file", "./data/tmQM_X.q")
     bo_file = config.get("bo_file", "./data/tmQM_X.BO")
     batch_size = config.get("batch_size", 32)
-    lr = config.get("lr", 0.001)
+    lr = config.get("lr", 0.0001)
     num_layers = config.get("num_layers", 3)
     hidden_channels = config.get("hidden_channels", 8)
     out_channels = config.get("out_channels", 2)
@@ -45,9 +45,10 @@ with open(config_file, 'r') as stream:
     save_features = config.get("features_file", "./data/data_list.pkl")
     save_model = config.get("save_model", False)
     load_model = config.get("load_model", "False")
-    latent_space_file = config.get("latent_space_file", "False")
+    latent_space = config.get("latent_space", True)
     save_wandb = config.get("save_wandb", True)
 
+print('Config:', config)
 data_list = []
 if dataset == 'tmqm':
     if not pre_processed_file  == "False": 
@@ -132,14 +133,20 @@ else:
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     for epoch in range(1, epochs + 1):
+        print(epoch)
         loss = train_vgae(epoch, model, train_loader, optimizer, beta, save_wandb=save_wandb)
         test_loss = test_vgae(epoch, model, test_loader, save_wandb=save_wandb)
-
+        if save_model and (epoch%10==0 or epoch==1):
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'model_config': model_config
+                }, 'checkpoints/dimenet/gaussian/' + wandb.run.name + f'_{epoch}.chkpt')
+            if latent_space:
+                latent_space_loader = DataLoader(data_list[:100], batch_size=batch_size)
+                map_latent_space(model, latent_space_loader, qm9=dataset=='qm9')
 if save_model:
     torch.save({
             'model_state_dict': model.state_dict(),
             'model_config': model_config
-            }, 'checkpoints/gatconv' + wandb.run.name + '.chkpt')
+            }, 'checkpoints/dimenet/gaussian' + wandb.run.name + '.chkpt')
 
-if not latent_space_file == "False":
-    map_latent_space(model, data_list, latent_space_file, qm9=dataset=='qm9')

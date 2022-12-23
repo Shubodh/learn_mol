@@ -1,0 +1,5 @@
+num_layers: 1
+save_wandb: True
+save_model: True
+latent_space_file: "./maps/dimenet_gaussian/1.png"
+beta: 0.06
