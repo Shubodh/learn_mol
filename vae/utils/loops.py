@@ -83,15 +83,15 @@ def test_vgae(epoch, model, loader, save_wandb=True):
         wandb.log({"epoch": epoch, 'loss_kl/val': running_loss_kl/n, 'loss_recon/val': running_loss/n, 'auc/val': running_auc/n, 'ap/val': running_ap/n})
     return float((running_loss+running_loss_kl)/n) 
 
-def map_latent_space(model, data, file_name, qm9=False, ind=False, mol_ind=False):
+def map_latent_space(model, loader, qm9=False):
     PT = Chem.GetPeriodicTable()
     model.eval()
     atom_types = []
     types = {0:'H' , 1:'C' , 2:'N', 3:'O', 4:'F'}
     n_types = len(types)
-    print(n_types)
     mol_idx = []
-    for idx, g in enumerate(data):
+    z = []
+    for idx, g in enumerate(loader):
         if qm9:
             type_one_hot = g.x[:, :n_types]
             t = list(torch.argmax(type_one_hot, dim=1).cpu().numpy())
@@ -101,30 +101,26 @@ def map_latent_space(model, data, file_name, qm9=False, ind=False, mol_ind=False
             mol_idx.extend(mi)
         else:
             atom_types.extend(slice_atom_type_from_node_feats(g.x).cpu().numpy())
-    # print('starting encoding')
+        g = g.to(device)
+        z.append( model.encode(g.z, g.pos, g.edge_index, g.edge_attr, g.batch).detach().cpu().numpy() )
     atom_types = np.array(atom_types)
     mol_idx = np.array(mol_idx)
-    data = [i.to(device) for i in data]
-    z = []
-    for idx, i in enumerate(data):
-        z.append( model.encode(i.x, i.edge_index, i.edge_attr).detach().cpu().numpy() )
     z = np.vstack(z)
-    if z.shape[1] != 2:
-        z = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3).fit_transform(z)
-    for mi in np.unique(mol_idx):
-        for i in np.unique(atom_types):
-            print(f"atom type: {i}")
-            if qm9: label = types[i]
-            else: label = PT.GetElementSymbol(i)
-            if mol_ind:
-                label+= f' {mi}'
-            z_filt = z[np.where(np.logical_and(mol_idx == mi, atom_types==i))]
-            if z_filt.shape[0] == 0: continue
-            plt.scatter(z_filt, z_filt, label=label)
-            plt.legend()
-
-        if ind: plt.show()
-    if not ind:
-        plt.legend()
-        # plt.show()
-        plt.savefig(file_name)
+    data_table = []
+    cnt = 0
+    for idx in range(z.shape[0]):
+        res = []
+        if np.any(z != 0):
+            cnt+=1
+        for j in range(z.shape[1]):
+            res.append(1.0*z[idx][j])
+        res.append(atom_types[idx])
+        res.append(mol_idx[idx])
+        data_table.append(res)
+    columns = [f"z{i}" for i in range(z.shape[1])]
+    columns.append('atom_type')
+    columns.append('mol_idx')
+    table = wandb.Table(data=data_table, columns=columns)
+    # wandb.plot.scatter(table, f"latent_space_{epoch}", "z0", "z1", "atom_type", "mol_idx")
+    wandb.log({"latent_space": table})
+    print(f'Number of non zero features: {cnt}') 
