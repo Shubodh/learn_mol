@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from rdkit import Chem
 from config.gvae import *
 from sklearn.manifold import TSNE
+import pandas as pd
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 def slice_atom_type_from_node_feats(node_features, as_index=False):
     """
     This function only works for the MolGraphConvFeaturizer used in the dataset.
@@ -83,7 +83,7 @@ def test_vgae(epoch, model, loader, save_wandb=True):
         wandb.log({"epoch": epoch, 'loss_kl/val': running_loss_kl/n, 'loss_recon/val': running_loss/n, 'auc/val': running_auc/n, 'ap/val': running_ap/n})
     return float((running_loss+running_loss_kl)/n) 
 
-def map_latent_space(model, loader, qm9=False):
+def map_latent_space(model, loader, epoch, qm9=False):
     PT = Chem.GetPeriodicTable()
     model.eval()
     atom_types = []
@@ -103,14 +103,14 @@ def map_latent_space(model, loader, qm9=False):
             atom_types.extend(slice_atom_type_from_node_feats(g.x).cpu().numpy())
         g = g.to(device)
         z.append( model.encode(g.z, g.pos, g.edge_index, g.edge_attr, g.batch).detach().cpu().numpy() )
-    atom_types = np.array(atom_types)
+    atom_types = [types[i] for i in atom_types]
     mol_idx = np.array(mol_idx)
     z = np.vstack(z)
     data_table = []
     cnt = 0
     for idx in range(z.shape[0]):
         res = []
-        if np.any(z != 0):
+        if np.all(z[idx, :] == 0):
             cnt+=1
         for j in range(z.shape[1]):
             res.append(1.0*z[idx][j])
@@ -120,7 +120,13 @@ def map_latent_space(model, loader, qm9=False):
     columns = [f"z{i}" for i in range(z.shape[1])]
     columns.append('atom_type')
     columns.append('mol_idx')
+    df = pd.DataFrame(data_table, columns=columns)
     table = wandb.Table(data=data_table, columns=columns)
+    data_table = np.array(data_table)
+    colors = {'H':'red', 'C':'green', 'O':'blue', 'F':'yellow', 'N': 'grey'}
+
+    plt.scatter(df['z0'], df['z1'], c=df['atom_type'].map(colors))
+    plt.savefig(f'latent_space_{epoch}.png')
     # wandb.plot.scatter(table, f"latent_space_{epoch}", "z0", "z1", "atom_type", "mol_idx")
-    wandb.log({"latent_space": table})
-    print(f'Number of non zero features: {cnt}') 
+    wandb.log({f"latent_space": table})
+    print(f'Number of all zero features atoms: {cnt}') 

@@ -82,13 +82,14 @@ test_loader = DataLoader(test_data, batch_size=batch_size)
 model_config = {
     "in_channels": num_features,
     "hidden_channels": hidden_channels,
+    "out_channels": out_channels,
     "num_layers": num_layers,
     "edge_dim": edge_dim,
     "heads": heads
     }
 
 config = {
-    "model": "vgae",
+    "model": "dimenet/gatconv",
     "beta": beta,
     "num_layers": num_layers,
     "heads": heads,
@@ -143,7 +144,7 @@ else:
                 }, 'checkpoints/dimenet/gaussian/' + wandb.run.name + f'_{epoch}.chkpt')
             if latent_space:
                 latent_space_loader = DataLoader(data_list[:100], batch_size=batch_size)
-                map_latent_space(model, latent_space_loader, qm9=dataset=='qm9')
+                map_latent_space(model, latent_space_loader, epoch, qm9=dataset=='qm9')
 if save_model:
     torch.save({
             'model_state_dict': model.state_dict(),
