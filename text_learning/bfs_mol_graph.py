@@ -83,7 +83,7 @@ def make_graph_simpler_for_bfs_viz(graph_nx):
 	return simpler_graph
 
 
-def change_graph_order_nx(graph_nx, root_node_id, order_type="bfs"):
+def apply_bfs_or_dfs_ordering(graph_nx, root_node_id, order_type="bfs"):
 	"""
 	This function changes the order of nodes in a graph (BFS or DFS) and returns the new graph.
 	`graph_nx` is a original graph in networkx format.
@@ -112,6 +112,7 @@ def change_graph_order_nx(graph_nx, root_node_id, order_type="bfs"):
 
 
 if __name__ == '__main__':
+	num_samples = 25 #10
 	PT = Chem.GetPeriodicTable()
 
 	testing =False #True  # 
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 	# for G in graphs:
 	# 	print(len(G.nodes))
 
-	graphs_few = graphs[0:10]
+	graphs_few = graphs[0:num_samples]
 
 	# iterate two lists at the same time and also keep track of the index
 	for i, (G, csd_code) in enumerate(zip(graphs_few, csd_codes)):
@@ -140,8 +141,8 @@ if __name__ == '__main__':
 				root_node_info = {"atomic_no": atomic_no, "atomic_symbol": atomic_symbol}
 
 		simpler_G = make_graph_simpler_for_bfs_viz(G)
-		graph_BFS = change_graph_order_nx(G, root_node_id, order_type="bfs")
-		graph_DFS = change_graph_order_nx(G, root_node_id, order_type="dfs")
+		graph_BFS = apply_bfs_or_dfs_ordering(G, root_node_id, order_type="bfs")
+		graph_DFS = apply_bfs_or_dfs_ordering(G, root_node_id, order_type="dfs")
 
 		# Plot the original graph
 		# plt.figure()
