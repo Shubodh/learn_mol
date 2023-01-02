@@ -441,7 +441,7 @@ class DimeNet_OG(torch.nn.Module):
         # Embedding block.
         x = self.emb(z, rbf, i, j)
         P = self.output_blocks[0](x, rbf, i, num_nodes=pos.size(0), debug=debug)
-        if debug:  
+        if debug:
             print("output after embedding layer")
             print(P)
         # Interaction blocks.
