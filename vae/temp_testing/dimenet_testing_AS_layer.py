@@ -374,7 +374,7 @@ class DimeNet(torch.nn.Module):
             for _ in range(num_blocks)
         ])
 
-        # self.reset_parameters()
+        self.reset_parameters() #ONGOING: uncommenting now, before commented. 
 
     def reset_parameters(self):
         self.rbf.reset_parameters()
@@ -486,7 +486,7 @@ class DimeNetBasic(torch.nn.Module):
     def forward(self, x, pos, edge_index, batch, debug=False):
         # print('Input:', x.shape)
         for conv in self.conv1:
-            x = conv(x, pos, batch, debug).relu()
+            x = conv(x, pos, batch, debug)#.relu() # ONGOING: Net,remove .relu()
         if debug: print('Post dimenet:', x)
         x = x.sum(dim=0) if batch is None else scatter(x, batch, dim=0)
         if debug: print('Post summation:', x)
