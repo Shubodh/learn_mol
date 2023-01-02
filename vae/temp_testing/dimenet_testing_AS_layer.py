@@ -494,8 +494,9 @@ class DimeNetBasic(torch.nn.Module):
 
 
 # ## Parameters and the model
+QM9_data_path = '../data/qm9' #'./data/QM9'
 
-data_list_raw = data.QM9('./data/QM9')
+data_list_raw = data.QM9(QM9_data_path)
 N = 100
 data_list = [g for g in data_list_raw[:N] if g.x.shape[0] < 20]
 # Define the device (CPU or GPU)
@@ -557,7 +558,7 @@ loss_fn = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 train_loss = []
 # Training loop
-for epoch in range(100):
+for epoch in range(epochs):
     # Loop over the training dataset
     for graph in train_loader:
         # Extract the data and labels
@@ -579,8 +580,8 @@ for epoch in range(100):
 
 # In[ ]:
 
-
-plt.plot(train_loss)
+# TODO: Plot to disk once printing for debugging is done
+# plt.plot(train_loss)
 
 
 # In[ ]:
@@ -601,7 +602,9 @@ print(f'number of non-zero embeddings: {cnt}')
 
 # In[ ]:
 
-
-g = data_list[0].to(device)
-model(g.z, g.pos, g.edge_index, batch=None, debug=True)
+# Debugging in detail: By passing debug=True to model and see every step
+debug_detail = False
+if debug_detail:
+	g = data_list[0].to(device)
+	model(g.z, g.pos, g.edge_index, batch=None, debug=debug_detail)
 
