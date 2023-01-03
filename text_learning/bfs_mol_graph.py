@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 import sys
 import os
+import numpy as np
+from pathlib import Path
 
 from mol_handler import featurize
 from utils import merge_images_four
@@ -89,6 +91,50 @@ def	example_code_dijkstra_2():
 	# Print the distances from the source node to every other node
 	print(G, distances)
 
+def apply_bfs_or_dfs_ordering(graph_nx, root_node_id, order_type="bfs"):
+	"""
+	This function changes the order of nodes in a graph (BFS or DFS) and returns the new graph.
+	`graph_nx` is a original graph in networkx format.
+	`order_type` is either "bfs" or "dfs" .
+	"""
+	if order_type == "bfs":
+		order = list(nx.bfs_tree(graph_nx, root_node_id).nodes)
+	elif order_type == "dfs":
+		order = list(nx.dfs_tree(graph_nx, root_node_id).nodes)
+	else:
+		raise ValueError("order_type must be either 'bfs' or 'dfs'")
+
+	new_graph = nx.Graph()
+
+
+	# # Add the atoms to the new graph in the order determined by the BFS
+	for i, node_name in enumerate(order):
+		# atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[i]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
+		atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
+		label_g = str(atomic_symbol) + ":o" + str(i)
+		new_graph.add_node(node_name, label=label_g)
+	
+	for u, v, data in graph_nx.edges(data=True):
+		new_graph.add_edge(u, v)
+	return new_graph
+
+def make_graph_simpler_for_bfs_viz(graph_nx):
+	"""
+	`graph_nx` is a original graph in networkx format.
+	Output is a simpler graph with lesser information, but it's the same graph structure.
+	"""
+	simpler_graph = nx.Graph()
+
+	order = list(graph_nx.nodes)
+	for i, node_name in enumerate(order):
+		atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
+		label_g = str(atomic_symbol) + ":o" + str(i)
+		simpler_graph.add_node(node_name, label=label_g)
+	
+	for u, v, data in graph_nx.edges(data=True):
+		simpler_graph.add_edge(u, v)
+	return simpler_graph
+
 def apply_dijkstra(dijkstra_G_input, root_node_id):
 	# Use Dijkstra's algorithm to find the shortest paths from the source node "d"
 	predecessors, distances = nx.dijkstra_predecessor_and_distance(dijkstra_G_input, root_node_id)
@@ -118,27 +164,10 @@ def apply_dijkstra(dijkstra_G_input, root_node_id):
 		new_graph.add_edge(u, v, weight=data['weight'])
 	return new_graph
 
-def make_graph_simpler_for_bfs_viz(graph_nx):
-	"""
-	`graph_nx` is a original graph in networkx format.
-	Output is a simpler graph with lesser information, but it's the same graph structure.
-	"""
-	simpler_graph = nx.Graph()
-
-	order = list(graph_nx.nodes)
-	for i, node_name in enumerate(order):
-		atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
-		label_g = str(atomic_symbol) + ":o" + str(i)
-		simpler_graph.add_node(node_name, label=label_g)
-	
-	for u, v, data in graph_nx.edges(data=True):
-		simpler_graph.add_edge(u, v)
-	return simpler_graph
-
 def make_graph_suitable_for_dijkstra(G):
 	"""
 	`graph_nx` is a original graph in networkx format.
-	Output is a simpler graph with lesser information, but it's the same graph structure.
+	Output is a simpler graph with lesser information made suitable for dijkstra algo, but it's the same graph structure.
 	"""
 	dijkstra_G_input = nx.Graph()
 
@@ -155,32 +184,90 @@ def make_graph_suitable_for_dijkstra(G):
 	return dijkstra_G_input
 
 
-def apply_bfs_or_dfs_ordering(graph_nx, root_node_id, order_type="bfs"):
-	"""
-	This function changes the order of nodes in a graph (BFS or DFS) and returns the new graph.
-	`graph_nx` is a original graph in networkx format.
-	`order_type` is either "bfs" or "dfs" .
-	"""
-	if order_type == "bfs":
-		order = list(nx.bfs_tree(graph_nx, root_node_id).nodes)
-	elif order_type == "dfs":
-		order = list(nx.dfs_tree(graph_nx, root_node_id).nodes)
-	else:
-		raise ValueError("order_type must be either 'bfs' or 'dfs'")
 
+def apply_cart_and_make_graph_suitable_for_graph_viz(G, root_node_id):
+	"""
+	"""
+	sorted_distances = sort_nodes_by_distance_from_root_node(G, root_node_id)
+	# graph_cart = cart_G_input
+	order = [x[0] for x in sorted_distances]
+	distance = [x[1] for x in sorted_distances]
 	new_graph = nx.Graph()
-
-
-	# # Add the atoms to the new graph in the order determined by the BFS
-	for i, node_name in enumerate(order):
-		# atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[i]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
-		atomic_symbol = PT.GetElementSymbol(graph_nx.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
-		label_g = str(atomic_symbol) + ":o" + str(i)
+	for i, tupl in enumerate(sorted_distances):
+		node_name = tupl[0]
+		dist = str(round(tupl[1], 3)) #Round off, otherwise it will be too long on image.
+		# print(node_name, dist)
+		atomic_symbol = PT.GetElementSymbol(G.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
+		xyz = G.nodes[node_name]['xyz']
+		# atomic_symbol_and_old_order = dijkstra_G_input.nodes(data=True)[node_name]['label']
+		## extract atomic_symbol: string before the first :
+		# atomic_symbol = atomic_symbol_and_old_order.split(":")[0]
+		xyz = [round(k, 3) for k in xyz]
+		label_g = str(atomic_symbol) + ":o" + str(i) + ":X" + str(xyz)
 		new_graph.add_node(node_name, label=label_g)
 	
-	for u, v, data in graph_nx.edges(data=True):
+	for u, v, data in G.edges(data=True):
 		new_graph.add_edge(u, v)
-	return new_graph
+	return new_graph # sorted_distances #
+
+def sort_nodes_by_distance_from_root_node(G, root_node_id):
+	"""
+	Given xyz value of root_node and xyz values of other nodes, calculate distance from root_node to other nodes
+	and sort them in ascending order.
+	"""
+	order = list(G.nodes)
+	dict_xyz = {}
+	for i, node_name in enumerate(order):
+		xyz = G.nodes[node_name]['xyz']
+		dict_xyz[node_name] = xyz
+	# print("root_node_xyz", root_node_xyz)
+	# print("other_nodes_xyz", other_nodes_xyz)
+
+	root_node_xyz = np.array(dict_xyz[root_node_id])
+	# print("TODO: convert xyz to np.array")
+	# print(root_node_xyz)
+
+	distances = {}
+	for i, node_name in enumerate(order):
+		# print("node_xyz", node_xyz)
+		node_xyz = np.array(dict_xyz[node_name])
+		# print("TODO: convert xyz to np.array")
+		# print(node_xyz)
+		dist = np.linalg.norm(root_node_xyz - node_xyz)
+		distances[node_name] = dist
+	# print("distances", distances)
+	# sort dict by value and return a list of tuples
+	sorted_distances = sorted(distances.items(), key=lambda x: x[1])
+	print(sorted_distances)
+	return sorted_distances #new_graph #
+
+
+def make_graph_suitable_for_cart_viz(G, root_node_id):
+	"""
+	`graph_nx` is a original graph in networkx format.
+	Output is a simpler graph with lesser information made suitable for cartesian ordering, but it's the same graph structure.
+	"""
+
+	cart_G_input = nx.Graph()
+	order = list(G.nodes)
+	# node_attrs = {num: {'xyz': xyz} for num, (element, xyz) in enumerate(G)}
+	# nx.set_node_attributes(cart_G_input, node_attrs)
+	for i, node_name in enumerate(order):
+		atomic_symbol = PT.GetElementSymbol(G.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
+		xyz = G.nodes[node_name]['xyz']
+		label_g = str(atomic_symbol) + ":o" + str(i) + ":X" + str(xyz)
+		# cart_G_input.add_node(node_name, label=label_g)
+
+
+	
+	for u, v, data in G.edges(data=True):
+		# data['x'][1] is bond length and data['x'][0] is bond order.
+		bond_length = data['x'][1]
+		cart_G_input.add_edge(u, v, weight=bond_length)
+	return cart_G_input
+
+
+
 
 
 if __name__ == '__main__':
@@ -215,6 +302,10 @@ if __name__ == '__main__':
 				root_node_id = id_node 
 				root_node_info = {"atomic_no": atomic_no, "atomic_symbol": atomic_symbol}
 
+		# make graph suitable for Cartesian dist and apply algo to get final ordering.
+		graph_cart = apply_cart_and_make_graph_suitable_for_graph_viz(G, root_node_id)
+		# cart_G_input = make_graph_suitable_for_cart_viz(G)
+
 		# make graph suitable for dijkstra and apply algo to get final ordering.
 		dijkstra_G_input = make_graph_suitable_for_dijkstra(G)
 		graph_dijk = apply_dijkstra(dijkstra_G_input, root_node_id)
@@ -222,7 +313,7 @@ if __name__ == '__main__':
 		# make graph suitable for bfs/dfs and apply algo to get final ordering.
 		simpler_G = make_graph_simpler_for_bfs_viz(G)
 		graph_BFS = apply_bfs_or_dfs_ordering(G, root_node_id, order_type="bfs")
-		graph_DFS = apply_bfs_or_dfs_ordering(G, root_node_id, order_type="dfs")
+		# graph_DFS = apply_bfs_or_dfs_ordering(G, root_node_id, order_type="dfs")
 
 
 		# Plot the original graph
@@ -231,9 +322,12 @@ if __name__ == '__main__':
 		# plt.title("Original Graph")
 
 		# save_path = "./bfs_viz/"
-		save_path = "./dijk_viz/"
+		# save_path = "./dijk_viz/"
+		save_path = "./cart_viz/"
 		prefix = str(i) + "_" + csd_code + "_"
-		names_4 = ["ariginal_simpler_graph","bfs_ordered_graph", "dfs_ordered_graph",  "dijk_ordered_graph"]
+		# names_4 = ["ariginal_simpler_graph","bfs_ordered_graph", "dfs_ordered_graph",  "dijk_ordered_graph"]
+		names_4 = ["ariginal_simpler_graph","bfs_ordered_graph", "cart_ordered_graph",  "dijk_ordered_graph"]
+
 		# Plot the original simpler graph
 		plt.figure()
 		nx.draw(simpler_G, with_labels=True, font_weight='bold', font_size=12, node_color='yellow',
@@ -248,14 +342,21 @@ if __name__ == '__main__':
 		plt.title(names_4[1])
 		save_fig(save_path, prefix + names_4[1])
 
-		# Plot the DFS-ordered graph
+		# # Plot the DFS-ordered graph
+		# plt.figure()
+		# nx.draw(graph_DFS, with_labels=True, font_weight='bold', font_size=12, node_color='lightpink',
+		# 		labels={node: f"{node} ({data['label']}) " for node, data in graph_DFS.nodes(data=True)})
+		# plt.title(names_4[2])
+		# save_fig(save_path, prefix + names_4[2])
+
+		# Plot the Cartesian-ordered graph
 		plt.figure()
-		nx.draw(graph_DFS, with_labels=True, font_weight='bold', font_size=12, node_color='lightpink',
-				labels={node: f"{node} ({data['label']}) " for node, data in graph_DFS.nodes(data=True)})
+		nx.draw(graph_cart, with_labels=True, font_weight='bold', font_size=6, node_color='lightpink',
+				labels={node: f"{node} ({data['label']}) " for node, data in graph_cart.nodes(data=True)})
 		plt.title(names_4[2])
 		save_fig(save_path, prefix + names_4[2])
 
-		# Plot the DFS-ordered graph
+		# Plot the Dijkstra-ordered graph
 		plt.figure()
 		nx.draw(graph_dijk, with_labels=True, font_weight='bold', font_size=8, node_color='lightblue',
 				labels={node: f"{node} ({data['label']}) " for node, data in graph_dijk.nodes(data=True)})
@@ -267,3 +368,7 @@ if __name__ == '__main__':
 		full_names = [save_path + prefix + name + ".png" for name in names_4]
 		merged_name = save_path + prefix + "merged.png"
 		merge_images_four(full_names, merged_name)
+
+		merged_path = save_path + "merged/" 
+		Path(merged_path).mkdir(parents=True, exist_ok=True)
+		os.system("mv " + save_path + "*merged.png " + merged_path)	
