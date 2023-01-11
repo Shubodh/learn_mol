@@ -187,6 +187,9 @@ def make_graph_suitable_for_dijkstra(G):
 
 def apply_cart_and_make_graph_suitable_for_graph_viz(G, root_node_id):
 	"""
+	Takes input graph G and root node id.
+	Then sorts the nodes by cartesian distance from root node. (based on XYZ values between 2 nodes)
+	Then, builds a new graph as per this new cartesian ordering and returns it.
 	"""
 	sorted_distances = sort_nodes_by_distance_from_root_node(G, root_node_id)
 	# graph_cart = cart_G_input
@@ -223,48 +226,22 @@ def sort_nodes_by_distance_from_root_node(G, root_node_id):
 	# print("root_node_xyz", root_node_xyz)
 	# print("other_nodes_xyz", other_nodes_xyz)
 
-	root_node_xyz = np.array(dict_xyz[root_node_id])
-	# print("TODO: convert xyz to np.array")
-	# print(root_node_xyz)
+	root_node_xyz = np.array(dict_xyz[root_node_id]) #tuple to np array: [10.18198648  1.16995784  0.5688572 ] (for example)
 
 	distances = {}
 	for i, node_name in enumerate(order):
 		# print("node_xyz", node_xyz)
 		node_xyz = np.array(dict_xyz[node_name])
-		# print("TODO: convert xyz to np.array")
-		# print(node_xyz)
 		dist = np.linalg.norm(root_node_xyz - node_xyz)
 		distances[node_name] = dist
-	# print("distances", distances)
+
 	# sort dict by value and return a list of tuples
 	sorted_distances = sorted(distances.items(), key=lambda x: x[1])
-	print(sorted_distances)
+	# print("distances", distances)
+	# print(sorted_distances) #[(0, 0.0), (6, 1.755944808258934), (7, 1.7976159538815277), (8, 1.7977819752842752), (9, 1.797783470091868), (1, 2.1519407341900183), (2, 2.901425751908748), (3, 2.942140250976361), (4, 2.9422361778102606), (5, 2.9422444793253435), (10, 3.129955231354396), (12, 3.13005840410125), (11, 3.1302160462711934)]
 	return sorted_distances #new_graph #
 
 
-def make_graph_suitable_for_cart_viz(G, root_node_id):
-	"""
-	`graph_nx` is a original graph in networkx format.
-	Output is a simpler graph with lesser information made suitable for cartesian ordering, but it's the same graph structure.
-	"""
-
-	cart_G_input = nx.Graph()
-	order = list(G.nodes)
-	# node_attrs = {num: {'xyz': xyz} for num, (element, xyz) in enumerate(G)}
-	# nx.set_node_attributes(cart_G_input, node_attrs)
-	for i, node_name in enumerate(order):
-		atomic_symbol = PT.GetElementSymbol(G.nodes[node_name]['x'][0]) #graph_nx.nodes[id_node]['x'][0] is atomic number.
-		xyz = G.nodes[node_name]['xyz']
-		label_g = str(atomic_symbol) + ":o" + str(i) + ":X" + str(xyz)
-		# cart_G_input.add_node(node_name, label=label_g)
-
-
-	
-	for u, v, data in G.edges(data=True):
-		# data['x'][1] is bond length and data['x'][0] is bond order.
-		bond_length = data['x'][1]
-		cart_G_input.add_edge(u, v, weight=bond_length)
-	return cart_G_input
 
 
 
@@ -294,7 +271,7 @@ if __name__ == '__main__':
 	# iterate two lists at the same time and also keep track of the index
 	for i, (G, csd_code) in enumerate(zip(graphs_few, csd_codes)):
 		print("\n")
-		print(csd_code)
+		print(i, csd_code)
 		for id_node in G.nodes:
 			atomic_no = (G.nodes[id_node]['x'][0])
 			atomic_symbol = PT.GetElementSymbol(atomic_no)
@@ -304,7 +281,6 @@ if __name__ == '__main__':
 
 		# make graph suitable for Cartesian dist and apply algo to get final ordering.
 		graph_cart = apply_cart_and_make_graph_suitable_for_graph_viz(G, root_node_id)
-		# cart_G_input = make_graph_suitable_for_cart_viz(G)
 
 		# make graph suitable for dijkstra and apply algo to get final ordering.
 		dijkstra_G_input = make_graph_suitable_for_dijkstra(G)
@@ -324,6 +300,7 @@ if __name__ == '__main__':
 		# save_path = "./bfs_viz/"
 		# save_path = "./dijk_viz/"
 		save_path = "./cart_viz/"
+		Path(save_path).mkdir(parents=True, exist_ok=True)
 		prefix = str(i) + "_" + csd_code + "_"
 		# names_4 = ["ariginal_simpler_graph","bfs_ordered_graph", "dfs_ordered_graph",  "dijk_ordered_graph"]
 		names_4 = ["ariginal_simpler_graph","bfs_ordered_graph", "cart_ordered_graph",  "dijk_ordered_graph"]
